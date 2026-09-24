@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Créateur de personnage anime — 10 roues</title>
+<style>
+:root{--bg:#090b16;--card:#11162a;--text:#f5f7ff;--muted:#aeb7d3;--accent:#7c5cff;--accent2:#ff4d9d}
+*{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,sans-serif;background:radial-gradient(circle at top,#1c1640 0,#090b16 48%,#05060c 100%);color:var(--text)}
+header{padding:28px 18px;text-align:center;position:sticky;top:0;z-index:5;background:#090b16e8;backdrop-filter:blur(10px);border-bottom:1px solid #ffffff12}
+h1{margin:0 0 8px;font-size:clamp(26px,5vw,44px)} header p{margin:0;color:var(--muted)}
+.actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}.btn{border:0;border-radius:14px;padding:12px 18px;font-weight:800;color:white;background:linear-gradient(135deg,var(--accent),var(--accent2));cursor:pointer;box-shadow:0 8px 24px #0005}.btn.secondary{background:#202640}.btn:disabled{opacity:.5;cursor:not-allowed}
+main{max-width:1250px;margin:0 auto;padding:24px 16px 50px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(310px,1fr));gap:18px}
+.card{background:linear-gradient(180deg,#151b32,#0f1425);border:1px solid #ffffff12;border-radius:22px;padding:16px;box-shadow:0 14px 40px #0006}
+.card h2{margin:0 0 5px;font-size:20px}.sub{color:var(--muted);font-size:13px;margin-bottom:12px}
+.wheel-wrap{position:relative;display:grid;place-items:center}.wheel{width:min(100%,330px);height:auto;aspect-ratio:1;touch-action:none;border-radius:50%;display:block;background:#222;box-shadow:0 10px 30px #0008;border:5px solid #252b48;transition:transform .1s linear}
+
+.wheel-css{width:min(100%,330px);aspect-ratio:1;border-radius:50%;position:relative;overflow:hidden;border:5px solid #252b48;box-shadow:0 10px 30px #0008;background:#222;transition:transform 4.2s cubic-bezier(.12,.72,.15,1);touch-action:none}
+.seg{position:absolute;inset:0;clip-path:polygon(50% 50%, 50% 0%, 65.45% 2.5%);transform:rotate(calc(var(--i) * (360deg / var(--count))));transform-origin:50% 50%}
+.seg:nth-child(odd){background:#7657e8}.seg:nth-child(even){background:#e44792}
+.seg span{position:absolute;left:50%;top:5%;width:45%;transform:translateX(-50%);text-align:center;font-size:9px;font-weight:800;color:#fff;text-shadow:0 1px 2px #000;line-height:1.05}
+.pointer{position:absolute;top:-2px;z-index:2;pointer-events:none;width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:0;border-bottom:28px solid #fff;filter:drop-shadow(0 2px 4px #000)}
+.result{min-height:46px;margin:13px 0 10px;padding:11px 13px;border-radius:12px;background:#090d1c;border:1px solid #ffffff10;color:#fff;font-weight:750}
+.spin{width:100%}.note{color:#8994b4;font-size:12px;margin-top:8px}
+.summary{margin-top:24px;padding:18px;border-radius:18px;background:#10162a;border:1px solid #ffffff12}.summary h2{margin-top:0}.summary-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:8px}.summary-item{padding:10px;border-radius:10px;background:#0a0f20}.summary-item b{display:block;font-size:12px;color:#8994b4;margin-bottom:3px}
+footer{text-align:center;color:#707b9b;font-size:12px;padding:10px 16px 35px}
+</style>
+</head>
+<body>
+<header>
+<h1>🎡 Créateur de personnage ANIME</h1>
+<p>10 roues • 20 choix par roue • 200 résultats possibles</p>
+<div class="actions">
+<button class="btn" id="all">⚡ TOUT TOURNER</button>
+<button class="btn secondary" id="reset">↻ Réinitialiser</button>
+</div>
+</header>
+<main>
+<div class="grid" id="grid"></div>
+<section class="summary">
+<h2>📋 Ton personnage</h2>
+<div class="summary-grid" id="summary"></div>
+</section>
+</main>
+<footer>Pour la roue Transformation, l'ordre est une approximation ludique entre univers différents : il n'existe pas de classement canonique commun.</footer>
+<script>
+const wheels=[
+["Force",["Force d’un enfant","Très faible","Faible","Normale","Athlétique","Surhumaine","Monstrueuse","Titanesque","Destructive","Cataclysmique","Niveau bâtiment","Niveau ville","Niveau pays","Niveau continent","Niveau planète","Niveau étoile","Niveau galaxie","Niveau univers","Niveau multivers","Force divine absolue"]],
+["Vitesse",["Escargot","Très lent","Lent","Normal","Athlète","Rapide","Très rapide","Supersonique","Hypersonique","Vitesse de l’éclair","Mach 100","Quasi-lumière","Vitesse de la lumière","Plus rapide que la lumière","Téléportation courte","Téléportation mondiale","Téléportation dimensionnelle","Déplacement instantané","Présence simultanée","Présent partout à la fois"]],
+["Intelligence",["Cerveau vide","Très idiot","Idiot","Sous la moyenne","Normal","Intelligent","Très intelligent","Surdoué","Génie","Maître stratège","Génie scientifique","Polyvalent absolu","Analyse instantanée","Prédit quelques secondes","Prédit plusieurs minutes","Prédit les actions ennemies","Comprend presque tout","Connaissance quasi totale","Connaissance universelle","Omniscience"]],
+["Pouvoir principal",["Aucun pouvoir","Faire apparaître une chaussette","Faire léviter une cuillère","Faire briller ses doigts","Contrôler une petite flamme","Contrôler l’eau","Contrôler le feu","Contrôler la foudre","Contrôler les ombres","Contrôler la lumière","Télékinésie","Téléportation","Régénération","Manipulation de l’énergie","Manipulation de la gravité","Manipulation de l’espace","Manipulation du temps","Manipulation des dimensions","Manipulation de la réalité","Réécriture de la réalité"]],
+["Pouvoir secondaire",["Aucun","Faire éternuer quelqu’un","Parler aux animaux","Voir dans le noir","Lire les émotions","Créer un petit clone","Devenir invisible","Voler","Copier une compétence","Créer plusieurs clones","Copier un pouvoir","Annuler un pouvoir","Absorber l’énergie","Voler temporairement un pouvoir","Prédire le futur","Arrêter le temps quelques secondes","Créer une dimension","Contrôler la gravité","Modifier les lois physiques","Annuler n’importe quel pouvoir"]],
+["Défense / résistance",["Papier","Très fragile","Fragile","Humaine","Solide","Acier","Surhumaine","Armure magique","Barrière énergétique","Très résistante","Résiste aux explosions","Résiste aux attaques dévastatrices","Résiste aux attaques planétaires","Résiste aux attaques cosmiques","Indestructible","Régénération défensive","Immunité physique","Immunité énergétique","Invulnérable","Intouchable"]],
+["Transformation",["Aucune","Gear 2 — One Piece","Super Saiyan — Dragon Ball","Mode Sage — Naruto","Gear 4 — One Piece","Baryon Mode — Naruto","Gear 5 — One Piece","Ultra Ego — Dragon Ball","Ultra Instinct — Dragon Ball","Perfected Ultra Instinct — Dragon Ball","True Bankai — Bleach","Mugetsu — Bleach","Gon adulte — Hunter × Hunter","Saitama — One Punch Man","Cosmic Garou — One Punch Man","Gogeta Blue — Dragon Ball","Vegito Blue — Dragon Ball","Anti-Spiral — Gurren Lagann","Super Tengen Toppa Gurren Lagann — Gurren Lagann","Forme transcendante"]],
+["Arme",["Rien","Cuillère","Bâton","Arme rouillée","Couteau","Dague","Épée normale","Katana","Grande épée","Lance magique","Arc magique","Faux maudite","Katana légendaire","Arme vivante","Arme démoniaque","Arme divine","Arme céleste","Arme cosmique","Arme capable de détruire une planète","Arme capable de couper les dimensions"]],
+["Technique ultime",["Aucune","Coup de poing nul","Petite explosion","Explosion","Destruction d’une maison","Destruction d’un bâtiment","Destruction d’une ville","Destruction d’un pays","Destruction d’un continent","Destruction d’une planète","Destruction d’une étoile","Destruction d’un système solaire","Destruction d’une galaxie","Destruction de plusieurs galaxies","Destruction d’un univers","Destruction de plusieurs univers","Effacement dimensionnel","Effacement temporel","Effacement de la réalité","Effacement du multivers"]],
+["Potentiel / évolution",["Aucun potentiel","Très faible","Faible","Normal","Bon","Élevé","Exceptionnel","Monstrueux","Illimité","Évolution accélérée","Adaptation au combat","Copie de l’adversaire","Évolution après chaque attaque","Évolution permanente","Évolution instantanée","Évolution sans limite","Dépasse ses propres limites","Dépasse les lois physiques","Dépasse les dimensions","Évolution infinie"]]
+];
+
+const states=wheels.map(()=>({idx:null,rot:0,spinning:false}));
+const grid=document.getElementById("grid"), summary=document.getElementById("summary");
+
+function makeWheel(items, i){
+ const wrap=document.createElement("div");
+ wrap.className="wheel-wrap";
+ wrap.innerHTML='<div class="pointer"></div><div class="wheel-css"></div>';
+ const wheel=wrap.querySelector(".wheel-css");
+ wheel.style.setProperty("--count",items.length);
+ items.forEach((item,k)=>{
+   const seg=document.createElement("div");
+   seg.className="seg";
+   seg.style.setProperty("--i",k);
+   seg.innerHTML="<span>"+item+"</span>";
+   wheel.appendChild(seg);
+ });
+ return wrap;
+}
+
+function render(){
+ grid.innerHTML="";
+ wheels.forEach(([name,items],i)=>{
+  const card=document.createElement("article"); card.className="card";
+  card.innerHTML=`<h2>${i+1}. ${name}</h2><div class="sub">20 choix</div>`;
+  card.appendChild(makeWheel(items,i));
+  const result=document.createElement("div"); result.className="result"; result.id="res"+i; result.textContent="Appuie sur le bouton pour tourner !"; card.appendChild(result);
+  const btn=document.createElement("button"); btn.className="btn spin"; btn.textContent="🎲 TOURNE LA ROUE"; btn.dataset.i=i;
+  btn.addEventListener("click",()=>spin(i)); card.appendChild(btn);
+  if(name==="Transformation"){const n=document.createElement("div");n.className="note";n.textContent="Ordre approximatif pour le jeu, pas canonique entre univers.";card.appendChild(n)}
+  grid.appendChild(card);
+ });
+ updateSummary();
+}
+
+function updateSummary(){
+ summary.innerHTML=wheels.map(([name,items],i)=>`<div class="summary-item"><b>${name}</b>${states[i].idx===null?"—":items[states[i].idx]}</div>`).join("");
+}
+
+function spin(i){
+ const s=states[i]; if(s.spinning)return;
+ s.spinning=true;
+ const card=grid.children[i], wheel=card.querySelector(".wheel-css"), btn=card.querySelector(".spin"), result=card.querySelector(".result");
+ btn.disabled=true; result.textContent="🎡 La roue tourne…";
+ const n=wheels[i][1].length, target=Math.floor(Math.random()*n);
+ const step=360/n;
+ const current=s.rot;
+ const normalized=((current%360)+360)%360;
+ const targetAngle=(360-(target*step+step/2))%360;
+ let delta=(targetAngle-normalized+360)%360;
+ delta+=360*(7+Math.floor(Math.random()*4));
+ const end=current+delta;
+ s.rot=end;
+ wheel.style.transition="transform 4.2s cubic-bezier(.12,.72,.15,1)";
+ wheel.style.transform=`rotate(${end}deg)`;
+ setTimeout(()=>{
+   s.idx=target; s.spinning=false; btn.disabled=false;
+   result.textContent="✨ "+wheels[i][1][target];
+   updateSummary();
+ },4300);
+}
+
+document.getElementById("all").addEventListener("click",async()=>{
+ const all=document.getElementById("all"); if(all.disabled)return;
+ all.disabled=true;
+ for(let i=0;i<wheels.length;i++){
+   spin(i);
+   await new Promise(r=>setTimeout(r,4500));
+ }
+ all.disabled=false;
+});
+document.getElementById("reset").addEventListener("click",()=>{
+ states.forEach(s=>{s.idx=null;s.rot=0;s.spinning=false});
+ render();
+});
+render();
+</script>
+</body>
+</html>
